@@ -5405,14 +5405,41 @@ export default function AllocationPanel({ isAdmin = true }) {
                       if(userAccounts.some(u=>u.username.toLowerCase()===email.toLowerCase())){alert("This email is already in the user list.");return;}
                       // Save current Supabase session so signUp() doesn't replace it
                       const { data: { session: currentSession } } = await supabase.auth.getSession();
+                      // FIX (round-9 senior review HIGH/B): the Add User identity swap.
+                      // supabase.auth.signUp() auto-signs-in the new user, which
+                      // fires SIGNED_IN in App.jsx. If the new user's email already
+                      // has a profile row (re-invite, pre-existing account), the
+                      // listener's getCurrentRole() can resolve a non-null profile
+                      // for them and call setProfile(newUser) — silently swapping
+                      // the admin's identity in React state.
+                      // Mitigation: while this block runs, expose a global guard
+                      // that App.jsx checks. If a SIGNED_IN event arrives for any
+                      // user ID other than the admin, the listener returns without
+                      // touching profile state. The guard is set BEFORE signUp and
+                      // cleared in a finally block to guarantee cleanup even on
+                      // throw.
+                      window.__nirmInviteInProgress = true;
+                      window.__nirmAdminUserId = currentSession?.user?.id || null;
                       // For invite mode, generate a random temp password — the user will reset it via email
                       const finalPw = isInvite
                         ? `Inv${Math.random().toString(36).slice(2,10)}${Math.random().toString(36).slice(2,10).toUpperCase()}!`
                         : pw;
-                      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: finalPw });
-                      // Restore the current admin's session (signUp swaps to the new user)
-                      if(currentSession) {
-                        await supabase.auth.setSession({ access_token: currentSession.access_token, refresh_token: currentSession.refresh_token });
+                      let signUpData, signUpError;
+                      try {
+                        ({ data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: finalPw }));
+                        // Restore the current admin's session (signUp swaps to the new user)
+                        if(currentSession) {
+                          await supabase.auth.setSession({ access_token: currentSession.access_token, refresh_token: currentSession.refresh_token });
+                        }
+                      } finally {
+                        // Give any in-flight SIGNED_IN listeners a moment to run
+                        // through their async getCurrentRole() with the guard
+                        // still set, THEN clear it. 300ms is comfortably longer
+                        // than a profile fetch.
+                        setTimeout(() => {
+                          window.__nirmInviteInProgress = false;
+                          window.__nirmAdminUserId = null;
+                        }, 300);
                       }
                       const isAlreadyRegistered = signUpError && /already.*registered|already.*exists|user.*exists/i.test(signUpError.message);
                       if(signUpError && !isAlreadyRegistered){
