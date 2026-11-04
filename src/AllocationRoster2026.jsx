@@ -4729,6 +4729,15 @@ export default function AllocationPanel({ isAdmin = true }) {
                         const normalise = s => s.toLowerCase().replace(/[^a-z0-9]/g,"");
                         let matched=0; const newBrands=[];
                         const updatedBrands = [...brands];
+                        // brand id → per-platform chats from THIS file. Filled with the
+                        // same brand the match loop picked (exact OR partial name match),
+                        // so a store linked by a partial name no longer writes 0 later.
+                        // Several file stores that map to one brand are summed.
+                        const chatsByBrandId = {};
+                        const addChats = (bid, platChats) => {
+                          const cur = chatsByBrandId[bid] || (chatsByBrandId[bid] = {});
+                          for (const [p, v] of Object.entries(platChats)) cur[p] = (cur[p] || 0) + (v || 0);
+                        };
 
                         Object.entries(agg).forEach(([storeName, platChats])=>{
                           // Skip closed/offboarded stores
@@ -4749,6 +4758,7 @@ export default function AllocationPanel({ isAdmin = true }) {
                             // The per-month data is stored in monthlyVol[mk] below; this
                             // brand record just gets platform/perf metadata updates.
                             updatedBrands[idx] = {...updatedBrands[idx], platforms:plats, perf:newPerf};
+                            addChats(updatedBrands[idx].id, platChats);
                             matched++;
                           } else {
                             const plats = Object.keys(platChats).filter(p=>platChats[p]>0);
@@ -4757,8 +4767,10 @@ export default function AllocationPanel({ isAdmin = true }) {
                               // the import so allocation has SOMETHING to work with. This
                               // is a one-time bootstrap — subsequent re-imports won't
                               // touch chats again (see existing-brand branch above).
+                              const newId = `imp${Date.now()}${Math.random().toString(36).slice(2,6)}`;
+                              addChats(newId, platChats);
                               newBrands.push({
-                                id:`imp${Date.now()}${Math.random().toString(36).slice(2,6)}`,
+                                id:newId,
                                 name:storeName, group:"", wh: storeName.includes("-") ? storeName.split("-").pop().trim() : "",
                                 platforms:plats, perf:perfAgg[storeName]||{},
                                 chats:{...Object.fromEntries(PLATFORMS.map(p=>[p,0])),...platChats}
@@ -4769,27 +4781,24 @@ export default function AllocationPanel({ isAdmin = true }) {
 
                         setBrands([...updatedBrands,...newBrands]);
                         // monthlyVol gets the import's per-month chat data.
-                        // Pull chats directly from the imported `agg` (not from brands.chats)
-                        // since we no longer overwrite brands.chats above.
-                        // FIX (round-7 senior review HIGH): `agg` is keyed by the file's literal
-                        // storeName (e.g. "Crocs-CMG"). Existing brands may have a slightly
-                        // different stored name (case/whitespace). The match loop above used
-                        // `normalise()` to find them, but the lookup here was using `b.name`
-                        // directly — so any case/punctuation mismatch silently wrote zeros.
-                        // Now we build a parallel normalised lookup table.
-                        const aggByNorm = {};
-                        for (const [storeName, platChats] of Object.entries(agg)) {
-                          aggByNorm[normalise(storeName)] = platChats;
-                        }
+                        // FIX: (1) chats come from chatsByBrandId, keyed by the brand the match
+                        // loop actually picked — the old exact-name lookup wrote 0 for brands
+                        // matched by a partial name. (2) Only the platforms present in the file
+                        // are overwritten. Duoke has no Amaze / Brand.com / LINE MyShop / Call CC,
+                        // so manually entered numbers for those used to be reset to 0 on every
+                        // re-import; they are now kept as-is.
+                        const filePlats = new Set(Object.values(agg).flatMap(pc => Object.keys(pc)));
                         setMonthlyVol(prev=>{
                           const newVol = {...(prev[mk] || {})};
                           [...updatedBrands,...newBrands].forEach(b=>{
-                            const importChats = aggByNorm[normalise(b.name)] || agg[b.name] || {};
-                            // Use the import's per-platform chats, falling back to brand's
-                            // existing chats only for brand-new brands (the bootstrap path).
-                            const isNewBrand = newBrands.some(nb => nb.id === b.id);
-                            const source = isNewBrand ? (b.chats || {}) : importChats;
-                            newVol[b.id] = Object.fromEntries(PLATFORMS.map(p=>[p, source[p] || 0]));
+                            const fromFile = chatsByBrandId[b.id] || {};
+                            const existing = newVol[b.id] || {};
+                            const row = {...existing};
+                            PLATFORMS.forEach(p => {
+                              if (filePlats.has(p)) row[p] = fromFile[p] || 0;
+                              else if (row[p] == null) row[p] = 0;
+                            });
+                            newVol[b.id] = row;
                           });
                           return {...prev,[mk]:newVol};
                         });
