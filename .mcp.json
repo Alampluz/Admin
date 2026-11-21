@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "Product-MCP": {
-      "type": "http",
-      "url": "https://mcp-product.cusp.asia/mcp"
-    }
-  }
-}
