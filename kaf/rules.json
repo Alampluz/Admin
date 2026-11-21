@@ -1,0 +1,74 @@
+{
+  "$comment": "Auto-fill rules for the daily Lazada KAF (key attribute fill) task. A rule matches a Lazada TH listing by shop (brand_id) + attribute key + optional title regex / category, and writes a fixed value. Only values listed here, or facts confirmed on the brand's official website with the source URL logged, may be written automatically. Edit via pull request; the daily task reads this file from the repo.",
+  "version": 1,
+  "updated": "2026-11-21",
+  "rules": [
+    {
+      "id": "maggi-flavor-original",
+      "brand_id": 77,
+      "shop": "Nestle F&B (Milo & Nestle Breakfast Cereals) [TH] [lazada]",
+      "attribute": "flavor",
+      "title_regex": "^MAGGI (Seasoning|Dipping|Cooking)",
+      "value": "original",
+      "reason": "Plain soy-based sauces with no flavour variant; the other Lazada options describe different products.",
+      "approved_by": "niramol.k", "approved_on": "2026-11-20"
+    },
+    {
+      "id": "ndg-machine-warranty-2y",
+      "brand_id": 38,
+      "shop": "Nescafe Dolce Gusto [TH] [lazada]",
+      "attribute": "warranty",
+      "category_id": "11781",
+      "value": "2 Years",
+      "reason": "Official TH site states a 2-year guarantee for Mini Me and Genio S Plus. Genio S Basic / Touch pending KAM confirmation.",
+      "source": "https://www.dolce-gusto.co.th/en/about-us",
+      "approved_by": "niramol.k", "approved_on": "2026-11-20"
+    },
+    {
+      "id": "remington-corded-hairtool-nonbattery",
+      "brand_id": 1096,
+      "shop": "REMINGTON [TH] [lazada]",
+      "attribute": "Battery_Type",
+      "title_regex": "AS8930|CB7480",
+      "value": "Non-battery",
+      "reason": "Corded mains tools per Remington UK product pages.",
+      "source": "https://uk.remington-europe.com/airvive",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    },
+    {
+      "id": "remington-hairtool-origin-china",
+      "brand_id": 1096,
+      "shop": "REMINGTON [TH] [lazada]",
+      "attribute": "country_origin_hb",
+      "title_regex": "S-1510|S-3700|S-1A100|AC8901|S-5505",
+      "value": "China",
+      "reason": "Region of Origin = Mainland China on the same SKU's Remington Shopee TH listing.",
+      "blocked_by": "TISI qualification (BIZ_CHECK_QUALIFICATION_CODE_REQUIRED) until uploaded in Seller Center",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    },
+    {
+      "id": "remington-hairtool-warranty-2y",
+      "brand_id": 1096,
+      "shop": "REMINGTON [TH] [lazada]",
+      "attribute": "warranty",
+      "title_regex": "S-1510|S-3700|S-1A100|AC8901|S-5505|CI-5538",
+      "value": "2 Years",
+      "reason": "Warranty Duration = 24 Months on the same SKU's Remington Shopee TH listing and in the Lazada description.",
+      "blocked_by": "TISI qualification (BIZ_CHECK_QUALIFICATION_CODE_REQUIRED) until uploaded in Seller Center",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    }
+  ],
+  "never_auto_fill": [
+    {"attributes": ["weight", "length", "Width", "Height"], "reason": "Product dimensions must come from the brand; the CREA flow tool also cannot send the unit Lazada requires (BIZ_CHECK_MEASURE_UNIT_INVALID)."},
+    {"attributes": ["input_voltage", "Rated_Frequency_(Hz)"], "reason": "Electrical ratings only from the brand's spec sheet or manual."},
+    {"attributes": ["TH_TISI&licenseCode"], "reason": "Compliance field: only copy from the same SKU's Shopee listing or brand document, never infer."}
+  ],
+  "brand_site_facts": {
+    "$comment": "Daily task may fill a gap from the brand's OFFICIAL website only (not retailers), logging the URL in the change row. Allowed domains per brand.",
+    "allowed_domains": {
+      "1096": ["remington-europe.com", "remington.com.au", "remington.com"],
+      "38": ["dolce-gusto.co.th"],
+      "77": ["nestle.co.th", "maggi.co.th"]
+    }
+  }
+}
