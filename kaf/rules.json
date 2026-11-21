@@ -57,7 +57,50 @@
       "blocked_by": "TISI qualification (BIZ_CHECK_QUALIFICATION_CODE_REQUIRED) until uploaded in Seller Center",
       "approved_by": "niramol.k", "approved_on": "2026-11-21"
     }
+    ,
+    {
+      "id": "guess-model-code-from-title",
+      "brand_id": 29,
+      "shop": "Guess Thailand [TH] [lazada]",
+      "attribute": "model",
+      "value_source": {"type": "title_regex", "pattern": "\\b(?=[A-Z0-9]*\\d)[A-Z]{1,2}[A-Z0-9]{5,10}\\b", "group": 0},
+      "reason": "Guess titles always carry the product code (e.g. GW0873L2, M6YB07W2688, TG232501); the Model attribute is that code.",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    },
+    {
+      "id": "guess-bag-hobo",
+      "brand_id": 29,
+      "shop": "Guess Thailand [TH] [lazada]",
+      "attribute": "Bag_type",
+      "title_regex": "\\bHOBO\\b",
+      "value": "Hobos",
+      "reason": "Title names the bag style.",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    },
+    {
+      "id": "fashion-sleeves-regular",
+      "brand_id": [22, 21, 30, 191],
+      "shop": "Wrangler / Lee / Hush Puppies / Jockey [TH] [lazada]",
+      "attribute": "sleeves",
+      "title_regex": "แขนสั้น|แขนยาว",
+      "value": "Regular",
+      "reason": "Title states short/long sleeve, which is Lazada's 'Regular' sleeve type (not sleeveless, raglan, roll-up or arm sleeve).",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    },
+    {
+      "id": "etude-origin-korea-1090110526",
+      "brand_id": 534, "attribute": "country_origin_hb", "item_id": "1090110526", "value": "Korea",
+      "reason": "Region of Origin on the same SKU's Etude House Shopee TH listing (3535607181).",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    },
+    {
+      "id": "mustela-origin-france-5604677909",
+      "brand_id": 1001, "attribute": "country_origin_hb", "item_id": "5604677909", "value": "France",
+      "reason": "Lazada description states ผลิตในประเทศฝรั่งเศส (made in France).",
+      "approved_by": "niramol.k", "approved_on": "2026-11-21"
+    }
   ],
+  "rule_semantics": "A rule applies when brand_id matches (number or list), the attribute key matches, item_id (if given) matches, category_id (if given) matches, and title_regex (if given) matches the title. The written value is `value`, or for value_source.type=title_regex the regex match (group) from the title; no match = rule does not apply. A rule with blocked_by is reported, not written.",
   "never_auto_fill": [
     {"attributes": ["weight", "length", "Width", "Height"], "reason": "Product dimensions must come from the brand; the CREA flow tool also cannot send the unit Lazada requires (BIZ_CHECK_MEASURE_UNIT_INVALID)."},
     {"attributes": ["input_voltage", "Rated_Frequency_(Hz)"], "reason": "Electrical ratings only from the brand's spec sheet or manual."},
